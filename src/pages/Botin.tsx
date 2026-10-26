@@ -106,6 +106,16 @@ function ItemAntrean({ item, sibuk, jalankan }: { item: Antrean; sibuk: boolean;
     if (!window.confirm(`Kirim pesan ini ke ${siapa(item)} lewat WhatsApp BOTIN?\n\n${draf}`)) return
     jalankan({ aksi: 'kirim', teks: draf === item.draf ? '' : draf })
   }
+  // Payment decisions are announced to the buyer by admin.py, so ask first.
+  const bayar = item.jenis === 'pembayaran' && (item.status === 'menunggu' || item.status === 'disetujui')
+  const terimaBayar = () => {
+    const tambahan = window.prompt(`Pembayaran ${siapa(item)} sudah masuk rekening?\nBot akan mengabari pembeli dan tahapnya jadi lunas.\n\nTambahan pesan (opsional, mis. kode aktivasi):`, '')
+    if (tambahan !== null) jalankan({ aksi: 'putuskan', status: 'selesai', catatan: tambahan })
+  }
+  const tolakBayar = () => {
+    const alasan = window.prompt(`Tolak pembayaran ${siapa(item)}? Pembeli akan diminta mengecek ulang transfernya.\n\nAlasan (opsional, ikut terkirim, mis. nominal kurang):`, '')
+    if (alasan !== null) jalankan({ aksi: 'putuskan', status: 'ditolak', catatan: alasan })
+  }
   return <article className="botin-item">
     <header><span className="badge unknown">{LABEL_JENIS[item.jenis] ?? item.jenis}</span><b>{siapa(item)}</b>{item.instansi && <span>{item.instansi}</span>}<small>{waktu(item.dibuat)} · {item.oleh}</small></header>
     {item.ringkasan && <p>{item.ringkasan}</p>}
@@ -116,8 +126,13 @@ function ItemAntrean({ item, sibuk, jalankan }: { item: Antrean; sibuk: boolean;
       {pesan && <button type="button" className="primary-button" disabled={sibuk || !draf.trim() || !item.wa} title={item.wa ? undefined : 'Nomor belum diketahui; kirim manual dari HP'} onClick={kirim}>Kirim via WA</button>}
       {tautanWa(item.wa) && <a className="refresh-button" href={tautanWa(item.wa)} target="_blank" rel="noreferrer">BUKA CHAT</a>}
       {item.jenis === 'tahap' && <button type="button" className="refresh-button" disabled={sibuk} onClick={() => { jalankan({ aksi: 'tahap', kunci: item.kunci, tahap: item.draf }); jalankan({ aksi: 'putuskan', status: 'disetujui' }) }}>TERAPKAN</button>}
-      <button type="button" className="refresh-button" disabled={sibuk} onClick={() => jalankan({ aksi: 'putuskan', status: 'selesai' })}>{pesan ? 'SUDAH SAYA KIRIM SENDIRI' : 'SELESAI'}</button>
-      <button type="button" className="refresh-button" disabled={sibuk} onClick={() => jalankan({ aksi: 'putuskan', status: 'ditolak' })}>TOLAK</button>
+      {bayar ? <>
+        <button type="button" className="primary-button" disabled={sibuk} onClick={terimaBayar}>TERIMA & KABARI</button>
+        <button type="button" className="refresh-button" disabled={sibuk} onClick={tolakBayar}>TOLAK & KABARI</button>
+      </> : <>
+        <button type="button" className="refresh-button" disabled={sibuk} onClick={() => jalankan({ aksi: 'putuskan', status: 'selesai' })}>{pesan ? 'SUDAH SAYA KIRIM SENDIRI' : 'SELESAI'}</button>
+        <button type="button" className="refresh-button" disabled={sibuk} onClick={() => jalankan({ aksi: 'putuskan', status: 'ditolak' })}>TOLAK</button>
+      </>}
     </div>
   </article>
 }
