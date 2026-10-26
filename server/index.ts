@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import express, { type NextFunction, type Request, type Response } from 'express'
 import { alwaysHiddenFor, excludedFor, FolderError, listFolder, publicAgent, readFolderFile, resolveAgentFolders } from './folders.js'
 import { installAccess } from './access.js'
+import { installBotin } from './botin.js'
 import { redactActivity, redactCalendar, redactDashboard, redactLogs, redactMemory, redactOffice, redactTasks, redactUsage } from './privacy.js'
 import { installProfileLock, isHidden, type Privacy } from './profile-lock.js'
 import { API_VERSION } from './api-version.js'
@@ -110,6 +111,9 @@ app.get('/api/folders/:profile/file', folderRoute(async (request) => {
   const { folder, excluded } = await guardFolder(request)
   return readFolderFile(folder, request.query.path, excluded)
 }))
+
+// BOTIN marketing CRM (leads, approval queue, reports) from the botin-crm plugin's admin CLI.
+installBotin(app, privacyOf)
 
 app.use('/api', (_request, response) => { response.status(404).json({ error: 'Not found' }) })
 
